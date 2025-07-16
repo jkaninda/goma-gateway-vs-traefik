@@ -1,0 +1,40 @@
+services:
+  okapi-example:
+    image: jkaninda/okapi-example
+    container_name: okapi-example
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.okapi-example.rule=Host(`okapi-example.jkaninda.dev`) || Host(`localhost`)
+      - traefik.http.routers.okapi-example.entrypoints=web
+      - traefik.http.services.okapi-example.loadbalancer.server.port=8080
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - default
+
+  gateway:
+    image: jkaninda/goma-gateway:0.3.2
+    container_name: gateway
+    command: server
+    restart: always
+    volumes:
+      - ./goma.yml:/etc/goma/goma.yml:ro
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - default
+
+  traefik:
+    image: traefik:v3.3.4
+    container_name: traefik
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - default

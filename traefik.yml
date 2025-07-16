@@ -1,0 +1,16 @@
+---
+log:
+  level: ERROR
+providers:
+  docker:
+    exposedByDefault: false
+api:
+  dashboard: true # if you don't need the dashboard disable it
+  insecure: true
+entryPoints:
+  web:
+    address: ':80' # http     
+  websecure:
+    address: ':443' # https
+serverstransport:
+  insecureskipverify: true
