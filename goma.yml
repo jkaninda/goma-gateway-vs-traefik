@@ -10,10 +10,5 @@ gateway:
     - name: okapi-example
       path: /
       hosts:
-       - okapi-example.jkaninda.dev
        - localhost
       target: http://okapi-example:8080
-      security:
-        forwardHostHeaders: true
-        tls:
-          skipVerification: true

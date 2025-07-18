@@ -85,7 +85,7 @@ services:
       - default
 
   gateway:
-    image: jkaninda/goma-gateway:0.3.2
+    image: jkaninda/goma-gateway:0.3.3
     container_name: gateway
     command: server
     restart: always
@@ -126,17 +126,15 @@ gateway:
       address: ":80"
     webSecure:
       address: ":443"
+  networking:
+    transport:
+      insecureSkipVerify: true
   routes:
     - name: okapi-example
       path: /
       hosts:
-       - okapi-example.jkaninda.dev
        - localhost
       target: http://okapi-example:8080
-      security:
-        forwardHostHeaders: true
-        tls:
-          skipVerification: true
 ```
 
 #### `traefik.yml` (Traefik)
@@ -171,7 +169,7 @@ serversTransport:
 Start the gateway and backend:
 
 ```sh
-docker compose up -d gateway okapi-example --force-recreate
+docker compose up -d gateway okapi-example
 ```
 
 Check readiness:
@@ -218,6 +216,11 @@ wrk -t8 -c500 -d60s http://localhost/api/books
 
 > 💡 You can substitute `okapi-example` with any backend to run your own tests.
 
+### Clean
+
+```sh
+docker compose down
+```
 ---
 
 ## 🔗 Useful Links
