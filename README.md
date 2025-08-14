@@ -71,7 +71,7 @@ Create a file named `compose.yaml`:
 ```yaml
 services:
   okapi-example:
-    image: jkaninda/okapi-example
+    image: jkaninda/okapi-example:1.0.0
     container_name: okapi-example
     labels:
       - traefik.enable=true
