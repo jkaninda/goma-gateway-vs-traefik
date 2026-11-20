@@ -1,40 +1,68 @@
-services:
-  okapi-example:
-    image: jkaninda/okapi-example
-    container_name: okapi-example
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.okapi-example.rule=Host(`okapi-example.jkaninda.dev`) || Host(`localhost`)
-      - traefik.http.routers.okapi-example.entrypoints=web
-      - traefik.http.services.okapi-example.loadbalancer.server.port=8080
-    restart: always
-    ports:
-      - 8080:8080
-    networks:
-      - default
+# Goma Gateway vs Traefik — benchmark stack
+#
+# CPU layout on an 8 vCPU host (override with env vars):
+#   proxy   (goma / traefik) -> PROXY_CPUS   (default 0-1)
+#   backend (api-example)    -> BACKEND_CPUS (default 2-4)
+#   loadgen (wrk / oha)      -> LOADGEN_CPUS (default 5-7)
+# Each proxy gets exactly the same CPU budget and the load generator never
+# competes with it. All traffic stays on the private bridge network, so
+# docker-proxy / NAT is not in the path.
+name: gw-bench
 
-  gateway:
-    image: jkaninda/goma-gateway:0.3.3
-    container_name: gateway
-    command: server
-    restart: always
+x-proxy: &proxy
+  cpuset: ${PROXY_CPUS:-0-1}
+  mem_limit: 1g
+  ulimits:
+    nofile: { soft: 1048576, hard: 1048576 }
+  networks: [bench]
+  depends_on: [api-example]
+
+services:
+  # Static nginx serving the exact payloads of jkaninda/okapi-example:2.0.0
+  # (/api/books/1 = 375 B, /api/books = 36 KB). okapi-example itself logs 3 lines
+  # per request and saturates at ~8k req/s, which would hide any gateway difference.
+  api-example:
+    image: nginx:1.29-alpine
+    container_name: bench-backend
     volumes:
-      - ./goma.yml:/etc/goma/goma.yml:ro
-    ports:
-      - 80:80
-      - 443:443
-    networks:
-      - default
+      - ./backend/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/api:/usr/share/nginx/html/api:ro
+    cpuset: ${BACKEND_CPUS:-2-4}
+    ulimits:
+      nofile: { soft: 1048576, hard: 1048576 }
+    networks: [bench]
+
+  goma:
+    <<: *proxy
+    image: jkaninda/goma-gateway:1.2.1
+    container_name: bench-goma
+    command: ["server", "--config", "/etc/goma/goma.yml"]
+    volumes:
+      - ./config/goma.yml:/etc/goma/goma.yml:ro
+    profiles: [goma]
 
   traefik:
-    image: traefik:v3.3.4
-    container_name: traefik
-    restart: always
+    <<: *proxy
+    image: traefik:v3.7.19
+    container_name: bench-traefik
+    command: ["--configFile=/etc/traefik/traefik.yml"]
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.yml:/traefik.yml:ro
-    ports:
-      - 80:80
-      - 443:443
-    networks:
-      - default
+      - ./config/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config/traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
+    profiles: [traefik]
+
+  loadgen:
+    build: ./loadgen
+    image: gw-bench-loadgen
+    container_name: bench-loadgen
+    cpuset: ${LOADGEN_CPUS:-5-7}
+    ulimits:
+      nofile: { soft: 1048576, hard: 1048576 }
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./bench:/bench:ro
+    networks: [bench]
+
+networks:
+  bench:
+    name: gw-bench

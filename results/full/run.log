@@ -1,0 +1,8 @@
+[13:27:55] results -> results/full
+[13:27:55] rep 1: starting goma
+[13:35:37] rep 1: starting traefik
+[13:43:20] rep 2: starting traefik
+[13:51:02] rep 2: starting goma
+[13:58:44] rep 3: starting goma
+[14:06:26] rep 3: starting traefik
+[14:14:08] done

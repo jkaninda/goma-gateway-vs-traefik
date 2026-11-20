@@ -1,0 +1,12 @@
+# Traefik v3.7 — benchmark (static) configuration
+# File provider instead of the Docker provider (no docker.sock polling),
+# dashboard/API disabled, no access log, no metrics.
+log:
+  level: ERROR
+entryPoints:
+  web:
+    address: ":80"
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: false
