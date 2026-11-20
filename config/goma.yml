@@ -1,0 +1,13 @@
+# Goma Gateway 1.2.x — benchmark configuration
+# Kept as close to defaults as possible: no metrics, no access log, no middlewares.
+version: 2
+gateway:
+  log:
+    level: error
+  entryPoints:
+    web:
+      address: ":80"
+  routes:
+    - name: api-example
+      path: /
+      target: http://api-example:8080

@@ -1,0 +1,11 @@
+http:
+  routers:
+    api-example:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      service: api-example
+  services:
+    api-example:
+      loadBalancer:
+        servers:
+          - url: http://api-example:8080
